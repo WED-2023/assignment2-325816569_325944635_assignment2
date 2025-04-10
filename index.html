@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Fighter🚀</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <img src="header.png" alt="Game Logo" id="logo">
+    <h1>Space Fighter🚀</h1>
+  </header>
+
+  <nav>
+    <button onclick="showScreen('welcomeScreen')">Home</button>
+    <button onclick="showModal('aboutModal')">About</button>
+  </nav>
+
+  <main id="content">
+    <!-- Welcome Screen (Now Centered) -->
+    <div id="welcomeScreen" class="screen active">
+      <div class="centered-container">
+        <h2>Welcome to the Spaceship Game!</h2>
+        <p>Blast off into an intergalactic adventure!</p>
+        <div class="button-group">
+          <button onclick="showScreen('loginScreen')">Login</button>
+          <button onclick="showScreen('registerScreen')">Register</button>
+        </div>
+      </div>
+    </div>
+    <div id="registerScreen" class="screen">
+      <div class="centered-container">
+        <form id="registerForm">
+          <h2>Register</h2>
+          <label for="regUsername">Username:</label>
+          <input type="text" id="regUsername" required>
+          
+          <label for="regPassword">Password:</label>
+          <input type="password" id="regPassword" required>
+          
+          <label for="regConfirmPassword">Confirm Password:</label>
+          <input type="password" id="regConfirmPassword" required>
+          
+          <label for="regFirstName">First Name:</label>
+          <input type="text" id="regFirstName" required>
+          
+          <label for="regLastName">Last Name:</label>
+          <input type="text" id="regLastName" required>
+          
+          <label for="regEmail">Email:</label>
+          <input type="email" id="regEmail" required>
+          
+          <label for="regDOB">Date of Birth:</label>
+          <input type="date" id="regDOB" required>
+          
+          <button type="submit">Register</button>
+        </form>
+      </div>
+    </div>
+    <div id="loginScreen" class="screen">
+      <div class="centered-container">
+        <form id="loginForm">
+          <h2>Login</h2>
+          <label for="loginUsername">Username:</label>
+          <input type="text" id="loginUsername" required>
+      
+          <label for="loginPassword">Password:</label>
+          <input type="password" id="loginPassword" required>
+      
+          <button type="submit">Login</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Spaceship Game | Contact: space@fighter.com</p>
+  </footer>
+
+  <!-- About Modal -->
+  <div id="aboutModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>About This Game</h2>
+      <p>Built by: Your Name</p>
+      <p>Template: Custom</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
