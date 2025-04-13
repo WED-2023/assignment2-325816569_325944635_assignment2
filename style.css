@@ -3,7 +3,7 @@ body {
   font-family: 'Orbitron', sans-serif; /* Futuristic font */
   background-color: #111; /* Dark space background */
   color: #f0f4f8; /* Light text color for contrast */
-  background-image: url('background.png'); /* Optional: add a space-themed background */
+  background-image: url('assets/background.png'); /* Optional: add a space-themed background */
   background-size: cover;
   background-attachment: fixed;
 }
