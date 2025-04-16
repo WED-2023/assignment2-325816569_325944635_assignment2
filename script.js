@@ -198,46 +198,112 @@ function moveSpaceShip(e) {
     drawSpaceship();
 }
 function drawSpaceship() {
-    const spaceship = document.getElementById("spaceship");
+    const spaceship = document.getElementById("sapceship");
     spaceship.style.left = playerSpaceship.x + "px";
     spaceship.style.top = playerSpaceship.y + "px";
 }
 
 // Enemy Spaceships //
-let enemySpaceships = []; // Array to hold enemy spaceships
+let enemySpaceships = [];
+let enemySpeed = 2;
+let speedLevel = 0;
+let maxSpeedLevels = 4;
+let direction = 1; // Global direction for all enemies
+let shiftDownNext = false;
+
 function spawnEnemy() {
-    const rows = 4; // Number of rows of enemy spaceships
-    const cols = 5; // Number of columns of enemy spaceships
+    const enemiesContainer = document.getElementById("enemiesContainer");
+    const rows = 4;
+    const cols = 5;
+
     for (let i = 0; i < rows; i++) {
+        enemySpaceships[i] = []; // initialize the row
+
         for (let j = 0; j < cols; j++) {
             const enemy = {
-                x: j * 100 + 50, // Adjusted for spacing
-                y: i * 100 + 50, // Adjusted for spacing
-                direction: 1, // 1 for right, -1 for left
+                x: j * 100 + 50,
+                y: i * 80 + 50,
+                direction: 1,
+                row: i,
+                col: j,
             };
+
+            // Create the DOM element
+            const enemyElement = document.createElement("div");
+            enemyElement.classList.add(`enemy-row${i + 1}`);
+            enemyElement.style.left = enemy.x + "px";
+            enemyElement.style.top = enemy.y + "px";
+            enemyElement.style.position = "absolute";
+            enemyElement.id = `enemy-${i}-${j}`;
+            enemiesContainer.appendChild(enemyElement);
+
             enemySpaceships[i].push(enemy);
         }
     }
 }
-function moveEnemy() {
-    enemySpaceships.forEach(row => {
-        row.forEach(enemy => {
-            enemy.x += enemy.direction * 2; // Move enemy spaceships
-            if (enemy.x > window.innerWidth - 50 || enemy.x < 0) {
-                enemy.direction *= -1; // Change direction on hitting the wall
-            }
-            drawEnenmy(enemy); // Draw enemy spaceship
-        });
-    });
-  }
 
 function drawEnemy(enemy) {
-    const enemyElement = document.getElementById(`enemySpaceships-${enemy.x}-${enemy.y}`);
+    const enemyElement = document.getElementById(`enemy-${enemy.row}-${enemy.col}`);
     if (enemyElement) {
         enemyElement.style.left = enemy.x + "px";
         enemyElement.style.top = enemy.y + "px";
     }
 }
+
+function moveEnemy() {
+  let reachedEdge = false;
+  
+
+  // Check if any enemy will hit the wall
+  enemySpaceships.forEach(row => {
+      row.forEach(enemy => {
+          if ((enemy.x + direction * enemySpeed > window.innerWidth -  1155 ) || (enemy.x + direction * enemySpeed < 0)) {
+            reachedEdge = true;
+            
+          }
+      });
+  });
+
+  // If any enemy hits edge, reverse direction and mark for shift down
+  if (reachedEdge) {
+      direction *= -1;
+      shiftDownNext = true;
+  }
+
+  // Move enemies
+  enemySpaceships.forEach(row => {
+      row.forEach(enemy => {
+          if (shiftDownNext) {
+          } else {
+              enemy.x += direction * enemySpeed;
+          }
+          drawEnemy(enemy);
+      });
+  });
+
+  // Reset shift flag
+  shiftDownNext = false;
+}
+
+// Increase speed every 5 seconds up to 4 times
+function startSpeedBoosts() {
+  const speedBoostInterval = setInterval(() => {
+      if (speedLevel < maxSpeedLevels) {
+          enemySpeed += 0.7; // Increase enemy speed
+          speedLevel++;
+          console.log(`Speed increased to: ${enemySpeed}`);
+      } else {
+          clearInterval(speedBoostInterval);
+      }
+  }, 5000);
+}
+
+window.onload = function() {
+  spawnEnemy();
+  setInterval(moveEnemy, 30); // Move enemies every 100ms
+  startSpeedBoosts();
+  window.addEventListener("keydown", moveSpaceShip); // Listen for key presses to move the spaceship
+};
 
 // Shooting //
 
