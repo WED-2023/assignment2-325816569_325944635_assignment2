@@ -72,9 +72,7 @@ function loginUser(event) {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
-    alert(`Welcome, ${user.firstName || username}!`);
-    showScreen('gameScreen');
-    initGame();
+    showScreen('configScreen');
   } else {
     alert("Invalid username or password.");
   }
@@ -118,6 +116,41 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("registerForm")?.addEventListener("submit", registerUser);
   document.getElementById("loginForm")?.addEventListener("submit", loginUser);
 });
+
+///////////////////////////////// Configuration //////////////////////////////////////////
+
+// Populate letter keys A-Z + Space
+window.addEventListener('DOMContentLoaded', () => {
+  const shootKeySelect = document.getElementById('shootKey');
+  for (let i = 65; i <= 90; i++) {
+    const letter = String.fromCharCode(i);
+    const option = document.createElement('option');
+    option.value = letter;
+    option.textContent = letter;
+    shootKeySelect.appendChild(option);
+  }
+});
+
+// Store config and start game
+function startConfiguredGame() {
+  const selectedKey = document.getElementById('shootKey').value;
+  const gameTime = parseInt(document.getElementById('gameTime').value);
+  const shipColor = document.getElementById('shipColor').value;
+
+  if (gameTime < 2) {
+    alert("Game time must be at least 2 minutes.");
+    return;
+  }
+
+  // Save settings (can be global or localStorage)
+  window.gameConfig = {
+    shootKey: selectedKey,
+    gameTime: gameTime,
+    shipColor: shipColor
+  };
+  showScreen('gameScreen');
+  initGame();
+}
 
 ////////////////////////////////////// GAME LOGIC //////////////////////////////////////
 
@@ -314,7 +347,7 @@ function handlePlayerMovement() {
   if (keys['ArrowDown'] && player.y < canvas.height - player.height) {
     player.y += player.speed;
   }
-  if (keys[' ']) { // Space bar to shoot
+  if (keys[' '] || window.gameConfig && (keys[window.gameConfig.shootKey.toLowerCase()] || keys[window.gameConfig.shootKey.toUpperCase()])) { 
     shoot();
   }
 }
@@ -322,7 +355,7 @@ function handlePlayerMovement() {
 // Shooting
 function shoot() {
   // Limit shooting rate
-  if (bullets.length > 2) return;
+  if (bullets.length > 0) return;
 
   bullets.push({
     x: player.x + player.width / 2 - bulletWidth / 2,
@@ -346,17 +379,19 @@ function moveBullets() {
 
 // Collision Detection
 function checkCollisions() {
-  // Bullet-enemy collisions
   for (let i = bullets.length - 1; i >= 0; i--) {
-    for (let j = enemies.length - 1; j >= 0; j--) {
-      if (enemies[j].alive && checkCollision(bullets[i], enemies[j])) {
-        enemies[j].alive = false;
-        bullets.splice(i, 1);
-        score += getScoreForRow(enemies[j].row);
-        updateScore();
+    const bullet = bullets[i];
 
-        break;
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const enemy = enemies[j];
+      if (enemy.alive && checkCollision(bullet, enemy)) {
+        enemy.alive = false;
+        bullets.splice(i, 1); // remove bullet
+        score += getScoreForRow(enemy.row);
+        updateScore();
+        break; // exit inner loop — this bullet is done
       }
+
     }
   }
 }
@@ -380,7 +415,7 @@ function getScoreForRow(row) {
 function levelUp() {
   if (accelerationCount < 4) {
     accelerationCount++;
-    enemySpeed += 0.5;
+    enemySpeed += 0.2;
   }
 }
 
@@ -409,3 +444,13 @@ function updateScore() {
 function updateLives() {
   document.getElementById('lives').textContent = lives;
 }
+document.addEventListener('keydown', (e) => {
+  // Stop page from scrolling when using game controls
+  if (
+    e.code === 'Space' ||
+    e.code === 'ArrowUp' ||
+    e.code === 'ArrowDown'
+  ) {
+    e.preventDefault();
+  }
+});

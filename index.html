@@ -76,6 +76,30 @@
         </form>
       </div>
     </div>
+    
+  <!-- Configuration Screen -->
+    <div id="configScreen" class="screen">
+      <div class="centered-container">
+        <h2>Game Configuration</h2>
+
+        <!-- Shooting Key -->
+        <label for="shootKey">Choose Shoot Key:</label>
+        <select id="shootKey" required>
+          <option value="Space">Spacebar</option>
+        </select>
+
+        <!-- Game Time -->
+        <label for="gameTime">Game Time (minutes):</label>
+        <input type="number" id="gameTime" min="2" value="2" required />
+
+        <!-- Color Picker -->
+        <label for="shipColor">Spaceship Color:</label>
+        <input type="color" id="shipColor" value="#1abc9c" />
+
+        <!-- Start Button -->
+        <button onclick="startConfiguredGame()">Start Game</button>
+      </div>
+    </div>
 
     <!-- Game Screen -->
     <div id="gameScreen" class="screen">
