@@ -13,8 +13,13 @@
   </header>
 
   <nav>
-    <button onclick="showScreen('welcomeScreen')">Home</button>
-    <button onclick="showModal('aboutModal')">About</button>
+    <div class="nav-left">
+      <button id="homeBtn" class="hidden" onclick="showScreen('welcomeScreen')">Home</button>
+      <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
+    </div>
+    <div class="nav-right">
+      <button onclick="showModal('aboutModal')">About</button>
+    </div>
   </nav>
 
   <main id="content">

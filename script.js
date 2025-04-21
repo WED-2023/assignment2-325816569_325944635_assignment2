@@ -8,6 +8,17 @@ function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
 
+  // Handle Home button visibility
+  const hideHomeOnScreens = ['configScreen', 'gameScreen'];
+  if (hideHomeOnScreens.includes(screenId)) {
+    document.getElementById("homeBtn").classList.add("hidden");
+  }else {
+    document.getElementById("homeBtn").classList.remove("hidden");
+  }
+  if (screenId === 'welcomeScreen') {
+    document.getElementById("logoutBtn").classList.add("hidden");
+  }
+
   // Special handling for about modal
   if (screenId === 'aboutScreen') {
     openModal();
@@ -59,6 +70,7 @@ function registerUser(event) {
 
   users.push({ username, password, firstName, lastName, email, dob });
   alert("Registration successful! You can now log in.");
+  document.getElementById('registerForm').reset(); 
   showScreen('loginScreen');
 }
 
@@ -72,6 +84,8 @@ function loginUser(event) {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
+    document.getElementById("loginForm").reset();
+    document.getElementById("logoutBtn").classList.remove("hidden");
     showScreen('configScreen');
   } else {
     alert("Invalid username or password.");
@@ -80,7 +94,11 @@ function loginUser(event) {
 
 // Logout
 function logout() {
+  document.getElementById("logoutBtn").classList.add("hidden");
   showScreen('welcomeScreen');
+  resetParams(); // Reset game parameters
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
 }
 
 // Modal functionality
@@ -152,20 +170,13 @@ function startConfiguredGame() {
   initGame();
 }
 
+
 ////////////////////////////////////// GAME LOGIC //////////////////////////////////////
 
 // Game Canvas Setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-  canvas.width = 800;
-  canvas.height = 600;
-
-  // Center player at the bottom after canvas is set
-  player.x = Math.random() * (canvas.width * 0.4); // Random starting position within 40% of the bottom area
-  player.y = canvas.height - player.height - 10;
-}
 
 // Game State
 let gameRunning = false;
@@ -177,6 +188,7 @@ let accelerationCount = 0;
 let lastShootTime = 0;
 let lastLevelUpTime = 0; // Track the time for level-up
 let badSpaceshipCooldown = [];
+let gameTime = window.gameConfig ? window.gameConfig.gameTime * 60 : 120; // Default to 2 minutes if not set
 
 // Player
 const player = {
@@ -199,6 +211,7 @@ const enemyWidth = 40;
 const enemyHeight = 40;
 let enemySpeed = 1;
 let enemyDirection = 1;
+let badBullet = null;
 
 // Bullets
 const bullets = [];
@@ -208,19 +221,26 @@ const bulletHeight = 15;
 
 // Initialize Game
 function initGame() {
-  bullets.length = 0;  // Clear the bullets array
-  resizeCanvas();
+  resetParams(); // Reset game parameters
+  resetPlayer();
   createEnemies();
   gameRunning = true;
-  score = 0;
-  lives = 3;
-  accelerationCount = 0;
-  enemySpeed = 1;
   lastLevelUpTime = Date.now();  // Set the initial time for level-up
+  gameTime = window.gameConfig ? window.gameConfig.gameTime * 60 : 120; // Reset game time
   updateScore();
   updateLives();
   document.getElementById('gameOver').style.display = 'none';
   gameLoop();
+  startTimer();
+}
+function resetParams(){
+  bullets.length = 0;
+  score = 0;
+  lives = 3;
+  accelerationCount = 0;
+  enemySpeed = 1;
+  gameRunning = false;
+  badBullet = null;
 }
 
 // Create Enemies
@@ -240,7 +260,15 @@ function createEnemies() {
     }
   }
 }
-
+function startTimer() {
+  const timer = setInterval(() => {
+    gameTime--;
+    if (gameTime <= 0) {
+      clearInterval(timer);
+      gameOver();
+    }
+  }, 1000); // Update every second
+}
 // Game Loop
 function gameLoop() {
   if (!gameRunning) return;
@@ -253,7 +281,7 @@ function gameLoop() {
     levelUp();
     lastLevelUpTime = currentTime;  // Reset the last level-up time
   }
-  requestAnimationFrame(gameLoop);
+  if (gameRunning)  requestAnimationFrame(gameLoop);
 }
 
 // Update Game State
@@ -262,6 +290,9 @@ function update() {
   moveEnemies();
   moveBullets();
   checkCollisions();
+  moveBadBullet();
+  checkBadBulletCollision(); 
+  maybeShootFromEnemy();  
 }
 
 // Render Game
@@ -291,6 +322,13 @@ function render() {
   bullets.forEach(bullet => {
     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
   });
+  // Draw bad spaceship bullet
+  if (badBullet) {
+    ctx.fillStyle = 'red';
+    ctx.fillRect(badBullet.x, badBullet.y, badBullet.width, badBullet.height);
+  }
+
+  
 }
 
 function moveEnemies() {
@@ -403,6 +441,64 @@ function checkCollision(rect1, rect2) {
          rect1.y + rect1.height > rect2.y;
 }
 
+function maybeShootFromEnemy() {
+  if (badBullet) {
+    const traveled = badBullet.y - badBullet.startY;
+    if (traveled < canvas.height * 0.75) {
+      return; // Wait until bullet travels 3/4 of screen
+    }
+  }
+
+  const shooters = enemies.filter(e => e.alive);
+  if (shooters.length === 0) return;
+
+  const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+
+  badBullet = {
+    x: shooter.x + shooter.width / 2 - 2.5,
+    y: shooter.y + shooter.height +5,
+    width: 5,
+    height: 15,
+    speed: 2,
+    startY: shooter.y + shooter.height
+  };
+}
+
+function checkBadBulletCollision() {
+  if (!badBullet) return;
+
+  if (checkCollision(badBullet, player)) {
+    lives--;
+    updateLives();
+    resetPlayer();
+    badBullet = null;
+
+    if (lives <= 0) {
+      gameOver();
+    }
+  }
+}
+
+function moveBadBullet() {
+  if (!badBullet) return;
+
+  badBullet.y += badBullet.speed;
+
+  //  Stop if it hits any alive enemy 
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (enemy.alive && checkCollision(badBullet, enemy)) {
+      badBullet = null;
+      return;
+    }
+  }
+
+  // If it goes off screen, reset
+  if (badBullet.y > canvas.height) {
+    badBullet = null;
+  }
+}
+
 function getScoreForRow(row) {
   switch (row) {
     case 0: return 20;
@@ -415,7 +511,7 @@ function getScoreForRow(row) {
 function levelUp() {
   if (accelerationCount < 4) {
     accelerationCount++;
-    enemySpeed += 0.2;
+    enemySpeed += 0.1;
   }
 }
 
