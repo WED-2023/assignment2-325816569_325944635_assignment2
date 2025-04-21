@@ -18,7 +18,14 @@ function showScreen(screenId) {
   if (screenId === 'welcomeScreen') {
     document.getElementById("logoutBtn").classList.add("hidden");
   }
-
+   // New Game button only visible on gameScreen
+   const newGameBtn = document.getElementById("newGameBtn");
+   if (screenId === 'gameScreen') {
+     newGameBtn.classList.remove("hidden");
+   } else {
+     newGameBtn.classList.add("hidden");
+   }
+ 
   // Special handling for about modal
   if (screenId === 'aboutScreen') {
     openModal();
@@ -190,6 +197,7 @@ let lastLevelUpTime = 0; // Track the time for level-up
 let badSpaceshipCooldown = [];
 let gameTime = window.gameConfig ? window.gameConfig.gameTime * 60 : 120; // Default to 2 minutes if not set
 
+
 // Player
 const player = {
   x: canvas.width / 2 - 25,
@@ -233,12 +241,13 @@ function initGame() {
   gameLoop();
   startTimer();
 }
-function resetParams(){
+function resetParams() {
+  enemySpeed = 1;
   bullets.length = 0;
   score = 0;
   lives = 3;
   accelerationCount = 0;
-  enemySpeed = 1;
+  lastLevelUpTime = 0;
   gameRunning = false;
   badBullet = null;
 }
@@ -269,6 +278,7 @@ function startTimer() {
     }
   }, 1000); // Update every second
 }
+
 // Game Loop
 function gameLoop() {
   if (!gameRunning) return;
@@ -511,18 +521,38 @@ function getScoreForRow(row) {
 function levelUp() {
   if (accelerationCount < 4) {
     accelerationCount++;
-    enemySpeed += 0.1;
+    enemySpeed += 0.15;
   }
 }
 
 // Game Events
 function gameOver() {
   gameRunning = false;
+  let message = '';
+  if (gameTime <= 0) {
+    if (score > 100) {
+      message = 'You can do better!' + score;
+    }
+    else {
+      message = 'Winner!';
+    }
+  
+  } else if (lives <= 0) {
+    message = 'You Lost!';
+  }
+  else {
+    if (enemies.every(enemy => !enemy.alive)) {
+      message = 'Champion!';
+    }
+  }
+  gameRunning = false;
+  document.getElementById('gameOverMessage').textContent = message;
   document.getElementById('finalScore').textContent = score;
   document.getElementById('gameOver').style.display = 'block';
 }
 
 function resetGame() {
+  // Add check if game is running and add to the scoreboard if isnt run
   document.getElementById('gameOver').style.display = 'none';
   initGame();
 }
