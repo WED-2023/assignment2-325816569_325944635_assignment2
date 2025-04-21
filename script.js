@@ -3,6 +3,9 @@ let users = [
   { username: "p", password: "testuser", firstName: "Player", lastName: "One", email: "p@example.com", dob: "2000-01-01" }
 ];
 
+let currentPlayer = null; // Track the currently logged-in player
+let playerScores = {}; // Store scores for each player
+
 // Show only the specified screen
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -91,6 +94,10 @@ function loginUser(event) {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
+    // Initialize scoring history for the player on every login
+    currentPlayer = username;
+    playerScores[currentPlayer] = []; // Reset the player's score history
+
     document.getElementById("loginForm").reset();
     document.getElementById("logoutBtn").classList.remove("hidden");
     showScreen('configScreen');
@@ -106,6 +113,9 @@ function logout() {
   resetParams(); // Reset game parameters
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Clear current player and their scores
+  currentPlayer = null;
+  playerScores = {}; // Reset all player scores
 }
 
 // Modal functionality
@@ -190,12 +200,11 @@ let gameRunning = false;
 let score = 0;
 let lives = 3;
 let badSpaceshipSpeed = 1;
-let badSpaceshipDirection = 1;  // 1 = right, -1 = left
 let accelerationCount = 0;
 let lastShootTime = 0;
 let lastLevelUpTime = 0; // Track the time for level-up
-let badSpaceshipCooldown = [];
 let gameTime = window.gameConfig ? window.gameConfig.gameTime * 60 : 120; // Default to 2 minutes if not set
+let timerId; // Variable to store the timer interval ID
 
 
 // Player
@@ -210,6 +219,21 @@ const player = {
 };
 
 player.image.src = 'assets/spaceship.png';
+
+// Enemy Images
+const enemyImages = [
+  'assets/enemyRow1.jpeg', // Row 0
+  'assets/enemyRow2.png',  // Row 1
+  'assets/enemyRow3.png',  // Row 2
+  'assets/enemyRow4.jpeg'  // Row 3
+];
+
+// Preload enemy images
+const enemyImageObjects = enemyImages.map(src => {
+  const img = new Image();
+  img.src = src;
+  return img;
+});
 
 // Enemies
 const enemies = [];
@@ -264,20 +288,44 @@ function createEnemies() {
         height: enemyHeight,
         row: r,
         col: c,
-        alive: true
+        alive: true,
+        image: enemyImageObjects[r]
       });
     }
   }
 }
 function startTimer() {
-  const timer = setInterval(() => {
+  const timerElement = document.getElementById('timer');
+
+  // Clear any existing timer interval
+  if (timerId) {
+    clearInterval(timerId);
+  }
+
+  timerId = setInterval(() => {
     gameTime--;
+
+    // Update the timer display
+    const minutes = Math.floor(gameTime / 60).toString().padStart(2, '0');
+    const seconds = (gameTime % 60).toString().padStart(2, '0');
+    timerElement.textContent = `${minutes}:${seconds}`;
+
+    // Change timer color to red during the last 30 seconds
+    if (gameTime <= 30) {
+      timerElement.style.color = 'red';
+    } else {
+      timerElement.style.color = ''; // Reset to default color
+    }
+
     if (gameTime <= 0) {
-      clearInterval(timer);
+      clearInterval(timerId);
       gameOver();
     }
   }, 1000); // Update every second
 }
+
+// Update the game loop to use a variable for tracking the animation frame
+let gameLoopId; // Variable to store the animation frame ID
 
 // Game Loop
 function gameLoop() {
@@ -291,7 +339,9 @@ function gameLoop() {
     levelUp();
     lastLevelUpTime = currentTime;  // Reset the last level-up time
   }
-  if (gameRunning)  requestAnimationFrame(gameLoop);
+
+  // Store the animation frame ID
+  gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 // Update Game State
@@ -311,19 +361,12 @@ function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw player
-  if (player.image.complete) {
-    ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
-  } else {
-    // Fallback rectangle if image not loaded
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-  }
+  ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 
   // Draw enemies
   enemies.forEach(enemy => {
     if (enemy.alive) {
-      ctx.fillStyle = ['red', 'orange', 'yellow', 'green'][enemy.row % 4];
-      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+      ctx.drawImage(enemy.image, enemy.x, enemy.y, enemy.width, enemy.height);
     }
   });
 
@@ -332,13 +375,12 @@ function render() {
   bullets.forEach(bullet => {
     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
   });
+
   // Draw bad spaceship bullet
   if (badBullet) {
     ctx.fillStyle = 'red';
     ctx.fillRect(badBullet.x, badBullet.y, badBullet.width, badBullet.height);
   }
-
-  
 }
 
 function moveEnemies() {
@@ -494,18 +536,31 @@ function moveBadBullet() {
 
   badBullet.y += badBullet.speed;
 
-  //  Stop if it hits any alive enemy 
+  // Check if the bullet goes off screen
+  if (badBullet.y > canvas.height) {
+    badBullet = null;
+    return;
+  }
+
+  // Ensure the bullet does not disappear when colliding with other enemies
   for (let i = 0; i < enemies.length; i++) {
     const enemy = enemies[i];
     if (enemy.alive && checkCollision(badBullet, enemy)) {
-      badBullet = null;
+      // Skip removing the bullet if it collides with an enemy
       return;
     }
   }
 
-  // If it goes off screen, reset
-  if (badBullet.y > canvas.height) {
+  // Check if the bullet hits the player
+  if (checkCollision(badBullet, player)) {
+    lives--;
+    updateLives();
+    resetPlayer();
     badBullet = null;
+
+    if (lives <= 0) {
+      gameOver();
+    }
   }
 }
 
@@ -528,32 +583,86 @@ function levelUp() {
 // Game Events
 function gameOver() {
   gameRunning = false;
+
+  // Save the current score to the player's history
+  if (currentPlayer) {
+    playerScores[currentPlayer].push(score);
+    playerScores[currentPlayer].sort((a, b) => b - a); // Sort scores in descending order
+    if (playerScores[currentPlayer].length > 5) {
+      playerScores[currentPlayer] = playerScores[currentPlayer].slice(0, 5); // Keep only top 5 scores
+    }
+  }
+
   let message = '';
   if (gameTime <= 0) {
     if (score > 100) {
       message = 'You can do better!' + score;
-    }
-    else {
+    } else {
       message = 'Winner!';
     }
-  
   } else if (lives <= 0) {
     message = 'You Lost!';
-  }
-  else {
+  } else {
     if (enemies.every(enemy => !enemy.alive)) {
       message = 'Champion!';
     }
   }
-  gameRunning = false;
+
+  // Display high score table
+  displayHighScoreTable();
+
   document.getElementById('gameOverMessage').textContent = message;
   document.getElementById('finalScore').textContent = score;
   document.getElementById('gameOver').style.display = 'block';
 }
 
+function displayHighScoreTable() {
+  const highScoreTable = document.getElementById('highScoreTable');
+  highScoreTable.innerHTML = ''; // Clear previous table
+
+  if (currentPlayer && playerScores[currentPlayer]) {
+    const scores = playerScores[currentPlayer];
+    highScoreTable.innerHTML = `
+      <h3>High Scores for ${currentPlayer}</h3>
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${scores.map((s, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${s}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+}
+
 function resetGame() {
-  // Add check if game is running and add to the scoreboard if isnt run
+  // Stop any ongoing game loop
+  gameRunning = false;
+
+  // Reset game parameters
+  resetParams();
+
+  // Cancel any ongoing animation frame
+  cancelAnimationFrame(gameLoopId);
+
+  // Clear the timer interval
+  if (timerId) {
+    clearInterval(timerId);
+  }
+
+  // Hide the game over screen
   document.getElementById('gameOver').style.display = 'none';
+
+  // Reinitialize the game
   initGame();
 }
 

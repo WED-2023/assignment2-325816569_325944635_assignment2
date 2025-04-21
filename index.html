@@ -18,10 +18,14 @@
       <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
     </div>
     <div class="nav-right">
-      <button id="newGameBtn" class="hidden" onclick="resetGame()">New Game</button>
       <button onclick="showModal('aboutModal')">About</button>
     </div>
   </nav>
+
+  <!-- New Game Button Section -->
+  <div id="newGameSection" class="hidden">
+    <button id="newGameBtn" onclick="resetGame()">New Game</button>
+  </div>
 
   <main id="content">
     <!-- Welcome Screen -->
@@ -112,12 +116,14 @@
       <div id="gameInfo">
         <div>Score: <span id="score">0</span></div>
         <div>Lives: <span id="lives">3</span></div>
+        <div>Time Left: <span id="timer">02:00</span></div> <!-- Added timer display -->
       </div>
       <canvas id="gameCanvas" width="800" height="600"></canvas>
       <div id="gameOver">
         <h2>Game Over</h2>
         <p id="gameOverMessage"></p>
         <p>Your final score: <span id="finalScore">0</span></p>
+        <div id="highScoreTable"></div> <!-- Added high score table -->
         <button onclick="resetGame()">Play Again</button>
         <button onclick="showScreen('welcomeScreen')">Main Menu</button>
       </div>
