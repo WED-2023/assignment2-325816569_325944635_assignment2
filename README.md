@@ -20,8 +20,8 @@ You control a spaceship at the bottom of the screen. Your mission is to destroy 
 
 ## 👤 Developed By
 
-- *Ofek Avigezer 325816569**
-- **Sean Shuhman 325944635**
+- *Ofek Avigezer 325816569*
+- *Sean Shuhman 325944635*
 ---
 
 ## 🌐 Live Demo
