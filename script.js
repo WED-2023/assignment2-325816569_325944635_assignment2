@@ -116,6 +116,8 @@ function logout() {
   // Clear current player and their scores
   currentPlayer = null;
   playerScores = {}; // Reset all player scores
+  try{backgroundMusic.pause();} catch (e) {} // Pause background music if playing
+  
 }
 
 // Modal functionality
@@ -206,6 +208,19 @@ let lastLevelUpTime = 0; // Track the time for level-up
 let gameTime = window.gameConfig ? window.gameConfig.gameTime * 60 : 120; // Default to 2 minutes if not set
 let timerId; // Variable to store the timer interval ID
 
+// Audio Assets
+const backgroundMusic = new Audio('assets/gameMusic.wav');
+backgroundMusic.loop = true;
+
+const laserSound = new Audio('assets/lazer.mp3');
+const hitEnemySound = new Audio('assets/hitEnemy.mp3');
+const getHitSound = new Audio('assets/getHit.wav');
+
+backgroundMusic.volume = 0.1;
+laserSound.volume = 0.3;
+hitEnemySound.volume = 0.3;
+getHitSound.volume = 0.3;
+
 
 // Player
 const player = {
@@ -264,6 +279,8 @@ function initGame() {
   document.getElementById('gameOver').style.display = 'none';
   gameLoop();
   startTimer();
+  backgroundMusic.currentTime = 0; // Reset the music to start
+  backgroundMusic.play()
 }
 function resetParams() {
   enemySpeed = 1;
@@ -351,7 +368,7 @@ function update() {
   moveBullets();
   checkCollisions();
   moveBadBullet();
-  checkBadBulletCollision(); 
+  //checkBadBulletCollision(); 
   maybeShootFromEnemy();  
 }
 
@@ -454,6 +471,8 @@ function shoot() {
     height: bulletHeight,
     speed: bulletSpeed
   });
+  laserSound.currentTime = 0;
+  laserSound.play();
 }
 
 function moveBullets() {
@@ -475,6 +494,8 @@ function checkCollisions() {
     for (let j = enemies.length - 1; j >= 0; j--) {
       const enemy = enemies[j];
       if (enemy.alive && checkCollision(bullet, enemy)) {
+        hitEnemySound.currentTime = 0;
+        hitEnemySound.play(); 
         enemy.alive = false;
         bullets.splice(i, 1); // remove bullet
         score += getScoreForRow(enemy.row);
@@ -516,20 +537,20 @@ function maybeShootFromEnemy() {
   };
 }
 
-function checkBadBulletCollision() {
-  if (!badBullet) return;
+// function checkBadBulletCollision() {
+//   if (!badBullet) return;
 
-  if (checkCollision(badBullet, player)) {
-    lives--;
-    updateLives();
-    resetPlayer();
-    badBullet = null;
+//   if (checkCollision(badBullet, player)) {
+//     lives--;
+//     updateLives();
+//     resetPlayer();
+//     badBullet = null;
 
-    if (lives <= 0) {
-      gameOver();
-    }
-  }
-}
+//     if (lives <= 0) {
+//       gameOver();
+//     }
+//   }
+// }
 
 function moveBadBullet() {
   if (!badBullet) return;
@@ -554,6 +575,8 @@ function moveBadBullet() {
   // Check if the bullet hits the player
   if (checkCollision(badBullet, player)) {
     lives--;
+    getHitSound.currentTime = 0;
+  getHitSound.play();
     updateLives();
     resetPlayer();
     badBullet = null;
@@ -583,7 +606,7 @@ function levelUp() {
 // Game Events
 function gameOver() {
   gameRunning = false;
-
+  backgroundMusic.pause();
   // Save the current score to the player's history
   if (currentPlayer) {
     playerScores[currentPlayer].push(score);
