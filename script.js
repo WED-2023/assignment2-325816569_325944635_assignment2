@@ -368,7 +368,6 @@ function update() {
   moveBullets();
   checkCollisions();
   moveBadBullet();
-  //checkBadBulletCollision(); 
   maybeShootFromEnemy();  
 }
 
@@ -536,21 +535,6 @@ function maybeShootFromEnemy() {
     startY: shooter.y + shooter.height
   };
 }
-
-// function checkBadBulletCollision() {
-//   if (!badBullet) return;
-
-//   if (checkCollision(badBullet, player)) {
-//     lives--;
-//     updateLives();
-//     resetPlayer();
-//     badBullet = null;
-
-//     if (lives <= 0) {
-//       gameOver();
-//     }
-//   }
-// }
 
 function moveBadBullet() {
   if (!badBullet) return;
