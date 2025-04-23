@@ -27,4 +27,4 @@ You control a spaceship at the bottom of the screen. Your mission is to destroy 
 ## 🌐 Live Demo
 
 You can play the game here:  
-👉 [Add link here](Add link here)
+👉 [(https://wed-2023.github.io/assignment2-325816569_325944635_assignment2/)](https://wed-2023.github.io/assignment2-325816569_325944635_assignment2/)
