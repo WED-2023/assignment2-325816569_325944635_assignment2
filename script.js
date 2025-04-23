@@ -172,10 +172,13 @@ window.addEventListener('DOMContentLoaded', () => {
 function startConfiguredGame() {
   const selectedKey = document.getElementById('shootKey').value;
   const gameTime = parseInt(document.getElementById('gameTime').value);
-  const shipColor = document.getElementById('shipColor').value;
 
   if (gameTime < 2) {
     alert("Game time must be at least 2 minutes.");
+    return;
+  }
+  if (gameTime > 5) {
+    alert("Game time must be at most 5 minutes.");
     return;
   }
 
@@ -183,7 +186,6 @@ function startConfiguredGame() {
   window.gameConfig = {
     shootKey: selectedKey,
     gameTime: gameTime,
-    shipColor: shipColor
   };
   showScreen('gameScreen');
   initGame();
@@ -320,7 +322,13 @@ function startTimer() {
   }
 
   timerId = setInterval(() => {
+    //  Stop timer if the game is no longer running
+    if (!gameRunning) {
+      clearInterval(timerId);
+      return;
+    }
     gameTime--;
+
 
     // Update the timer display
     const minutes = Math.floor(gameTime / 60).toString().padStart(2, '0');
